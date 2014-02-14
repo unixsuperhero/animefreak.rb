@@ -16,7 +16,7 @@ class AnimeFreak
   end
 
   def initialize(url)
-    @url = url
+    @url = url.gsub(/\s/, '%20')
   end
 
   def uri
@@ -29,15 +29,14 @@ class AnimeFreak
   end
 
   def body
-    @body = IO.read(sample_file) if sample_exists?
     @body ||= response.body
   end
 
   def self.file(link)
-    response = Net::HTTP.get_response(URI(link))
+    response = Net::HTTP.get_response(URI(link.gsub(/\s/, '%20')))
     body = response.body
     files = body.scan(/file=(http[^'"<>]*)/i).flatten
-    files.map{|m| URI.decode(m).gsub(/[+]/, '%20') }.uniq
+    files.map{|m| URI.decode(m).gsub(/[+]/, ' ') }.uniq
   end
 
   def mirror_regex
@@ -46,7 +45,7 @@ class AnimeFreak
 
   def mirrors
     URI.decode(body).scan(mirror_regex).flatten.map do |m|
-      m.gsub(/[+]/, '%20')
+      m.gsub(/[+]/, ' ')
     end
   end
 
@@ -56,16 +55,13 @@ class AnimeFreak
     mirrors.flatten.map{|m|
       URI.decode(m).scan(/https?:..[^'"<>]*/i)
     }.flatten.map{|m|
-      m.gsub(/[+]/, '%20')
+      m.gsub(/[+]/, ' ')
     }
   end
 end
 
-link = (ARGV[0] && ARGV[0].to_s.gsub(/\s/, '%20')) || 'http://www.animefreak.tv/watch/kill-la-kill-episode-8-online'
+link = ARGV[0]
 anime = AnimeFreak.new(link)
-
-#pp File.delete(anime.sample_file)
-pp IO.write(anime.sample_file, anime.body) if not anime.sample_exists?
 
 puts anime.mirrors.map{|mirror|
   if mirror =~ /\/[^\/]*[.](flv|mp4)([?]|$)/i
