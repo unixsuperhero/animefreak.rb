@@ -33,23 +33,6 @@ class AnimeFreak
     @body ||= response.body
   end
 
-  def javascript_bookmarklet
-    <<-"ORIGINALJAVASCRIPT"
-      b=$('body'); ul=$('<ul/>'); b.prepend(ul);
-      $('a.multi').each(function(i, e){
-        link = decodeURIComponent(String(e.onclick).replace(/.*\n.*javascript:loadParts..([^']*)'.*\n.*/, '$1')).replace(/[+]/g, ' ');
-        li=$('<li/>').css({
-          'background':'white',
-          'padding':'5px',
-          'margin':'5px'
-        });
-        p=$('<p/>').text(link);
-        a=$('<a/>').text(link).attr('href', link.replace(/.*(http:[^"'<>]*).*/, '$1'));
-        b.prepend(ul.append(li.append( p.append(a) )));
-      });
-    ORIGINALJAVASCRIPT
-  end
-
   def self.file(link)
     response = Net::HTTP.get_response(URI(link))
     body = response.body
@@ -83,15 +66,6 @@ anime = AnimeFreak.new(link)
 
 #pp File.delete(anime.sample_file)
 pp IO.write(anime.sample_file, anime.body) if not anime.sample_exists?
-#
-#pp({
-#  url: anime.url,
-#  uri: anime.uri,
-## response: anime.response,
-#  mirrors: anime.mirrors,
-#})
-#
-#puts; puts "MIRRORS:"
 
 puts anime.mirrors.map{|mirror|
   if mirror =~ /\/[^\/]*[.](flv|mp4)([?]|$)/i
