@@ -65,9 +65,9 @@ anime = AnimeFreak.new(link)
 
 puts anime.mirrors.map{|mirror|
   if mirror =~ /\/[^\/]*[.](flv|mp4)([?]|$)/i
-    '( cd ~/Downloads; wget -c --progress=bar "%s" )' % mirror
+    '( cd ~/Downloads; wget -cb "%s" )' % mirror
   elsif (file = AnimeFreak.file(mirror)).any?
-    file.map{|m| '( cd ~/Downloads; wget -c --progress=bar "%s" )' % m }
+    file.map{|m| '( cd ~/Downloads; wget -cb "%s" )' % m }
   else
     "# REQUIRES MORE PROCESSING '%s'" % mirror
   end
