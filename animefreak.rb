@@ -32,6 +32,10 @@ class AnimeFreak
     @body ||= response.body
   end
 
+  def upload2
+    body.scan(/[?&]video=(https?:..[^&?]*[.](?:mp4|flv)[^&?]*)/i).uniq.sort
+  end
+
   def self.file(link)
     response = Net::HTTP.get_response(URI(link.gsub(/\s/, '%20')))
     body = response.body
@@ -60,18 +64,48 @@ class AnimeFreak
   end
 end
 
-link = ARGV[0]
-anime = AnimeFreak.new(link)
+def run
+  pp({
+    argv_zero: ARGV[0],
+    argv_one: ARGV[1],
+    argv: ARGV,
+  })
 
-puts anime.mirrors.map{|mirror|
-  if mirror =~ /\/[^\/]*[.](flv|mp4)([?]|$)/i
-    '( cd ~/Downloads; wget -cb "%s" )' % mirror
-  elsif (file = AnimeFreak.file(mirror)).any?
-    file.map{|m| '( cd ~/Downloads; wget -cb "%s" )' % m }
-  else
-    "# REQUIRES MORE PROCESSING '%s'" % mirror
-  end
-}.flatten.group_by{|l|
-  l =~ /REQUIRES MORE PROCESSING/
-}.values.map{|g| g.join("\n") }.join("\n\n")
+  #return false
+
+  link = ARGV[0]
+  anime = AnimeFreak.new(link)
+
+  episode_number = '%02d' % link.scan(/episode-?(\d\d*)/i).flatten.first.to_i
+  episode_name = link.split('/').last.sub(/-?episode.*/i,'')
+  outfile = '%s-%02d' % [episode_name, episode_number]
+
+  puts anime.mirrors.map{|mirror|
+    if mirror =~ /\/[^\/]*[.](flv|mp4)([?]|$)/i
+      #'( cd ~/Downloads; wget -cb "%s" )' % mirror
+      extension = mirror.scan(/[.](mp4|flv)/i).flatten.first
+      'download "%s" "%s.%s"' % [mirror,outfile,extension]
+    elsif (file = AnimeFreak.file(mirror)).any?
+      file.map{|m|
+        extension = m.scan(/[.](mp4|flv)/i).flatten.first
+        'download "%s" "%s.%s"' % [m,outfile,extension]
+      }
+    elsif mirror =~ /upload2/i
+      file = AnimeFreak.new(mirror).upload2
+      file.flatten.map{|m|
+        extension = m.scan(/[.](mp4|flv)/i).flatten.first
+        'download "%s" "%s.%s"' % [m,outfile,extension]
+      }
+    else
+      "# REQUIRES MORE PROCESSING '%s'" % mirror
+    end
+  }.flatten.group_by{|l|
+    l =~ /REQUIRES MORE PROCESSING/
+  }.values.map{|g| g.join("\n") }.join("\n\n")
+end
+
+pp({
+  calling_run: 'calling it...',
+  run_returns: run,
+})
 
