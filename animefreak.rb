@@ -36,6 +36,12 @@ class AnimeFreak
     body.scan(/[?&]video=(https?:..[^&?]*[.](?:mp4|flv)[^&?]*)/i).uniq.sort
   end
 
+  def videoweed
+    vw_file = body.scan(/(?:filekey|fkz)="([^"]*)"/i).flatten.first
+    vw_key  = body.scan(/[.]file="([^"]*)"/i).flatten.first
+    "http://www.videoweed.es/api/player.api.php?key=%s&pass=undefined&cid2=1004&user=undefined&cid3=undefined&cid=1&numOfErrors=0&file=%s" % [vw_key, vw_file]
+  end
+
   def self.file(link)
     response = Net::HTTP.get_response(URI(link.gsub(/\s/, '%20')))
     body = response.body
@@ -96,6 +102,10 @@ def run
         extension = m.scan(/[.](mp4|flv)/i).flatten.first
         'download "%s" "%s.%s"' % [m,outfile,extension]
       }
+    elsif mirror =~ /videoweed/i
+      m = AnimeFreak.new(mirror).videoweed
+      extension = m.scan(/[.](mp4|flv)/i).flatten.first
+      'download "%s" "%s.%s"' % [m,outfile,extension]
     else
       "# REQUIRES MORE PROCESSING '%s'" % mirror
     end
